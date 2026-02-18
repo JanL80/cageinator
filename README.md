@@ -6,6 +6,8 @@ A tool for automatically constructing and screening metal-organic cages from lin
 ## ⚠️ Attention Notice ⚠️
 This is a preliminary release and is currently in active development. Release versions of the style **0.0.x** indicate a development stage. The package itself, file formats, and behavior may change at any time without prior notice, and backwards compatibility is not guaranteed. Further, current/newly implemented functionalities may show unexpected behaviour until bug fixes have been applied. Use at your own risk.
 
+Since this tool is primarily developed for UNIX-based operating systems such as Linux and macOS, running Cageinator on Windows may produce unexpected behavior. While the core functionality should work, the use with external components (e.g., xTB or Open Babel) is not guaranteed in the current release. Therefore, using WSL is recommended until a future release provides better Windows support.
+
 ---
 
 ## Setting up the Cageinator
