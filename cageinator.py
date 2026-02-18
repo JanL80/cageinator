@@ -504,7 +504,8 @@ def run_xtb_for_out_dir(
                 "--save-trj",
                 *extra_flags,
             ]
-
+            
+            subprocess.run(["/bin/chmod", "+x", XTB_OPT_SH], check=False)
             res = subprocess.run(cmd, cwd=sub, check=False)
             opt_xyz  = sub / "xtb_opt.xyz"
             xtb_fail = sub / "xtb_failed_last.xyz"
@@ -648,6 +649,7 @@ def main(argv=None) -> int:
         return 0
 
     if getattr(args, "xtb_help", False):
+        subprocess.run(["/bin/chmod", "+x", XTB_OPT_SH], check=False)
         subprocess.run([XTB_OPT_SH, "--help"], check=False)
         return 0
 
@@ -698,6 +700,7 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 
 
