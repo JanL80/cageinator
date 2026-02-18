@@ -68,8 +68,8 @@ def _require_dir(arg_value: str, label: str) -> tuple[bool, Path | None]:
 
 
 ### calculation imports
-XTB_OPT_SH = shutil.which("xtb_opt.sh") or str(HERE / "calculation" / "xtb_opt.sh")
-from calculation import obabel_opt as OBABEL_OPT_SH
+XTB_OPT_PY = "calculation.xtb_opt"
+from calculation import obabel_opt as OBABEL_OPT_PY
 
 ### utility imports
 from utility_functions import json_outline_creator as JSON_OUTLINE
@@ -412,9 +412,9 @@ def run_xtb_for_out_dir(
             continue
         
         ### If this folder already has a successful xTB result, skip it entirely
-        xtb_out = sub / "xtb_opt.mol"
+        xtb_out = sub / "xtb_opt.xyz"
         if xtb_out.exists() and xtb_out.stat().st_size > 0:
-            print(f"\n[xTB] skip folder (xtb_opt.mol exists): \n   cwd={sub}")
+            print(f"\n[xTB] skip folder (xtb_opt.xyz exists): \n   cwd={sub}")
             continue
 
         ### Charge fallback inferred once per subdir
@@ -495,8 +495,7 @@ def run_xtb_for_out_dir(
             )
 
             cmd = [
-                "/bin/bash",
-                XTB_OPT_SH,
+                sys.executable, "-m", XTB_OPT_PY,
                 "--path", str(xtb_input.resolve()),
                 "--out", str(sub.resolve()),
                 "--charge", str(chrg),
@@ -504,8 +503,7 @@ def run_xtb_for_out_dir(
                 "--save-trj",
                 *extra_flags,
             ]
-            
-            subprocess.run(["/bin/chmod", "+x", XTB_OPT_SH], check=False)
+
             res = subprocess.run(cmd, cwd=sub, check=False)
             opt_xyz  = sub / "xtb_opt.xyz"
             xtb_fail = sub / "xtb_failed_last.xyz"
@@ -649,8 +647,7 @@ def main(argv=None) -> int:
         return 0
 
     if getattr(args, "xtb_help", False):
-        subprocess.run(["/bin/chmod", "+x", XTB_OPT_SH], check=False)
-        subprocess.run([XTB_OPT_SH, "--help"], check=False)
+        subprocess.run([sys.executable, "-m", XTB_OPT_PY, "--help"], check=False)
         return 0
 
     if not (args.nodes and args.linkers and args.out):
@@ -700,7 +697,5 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
 
 
