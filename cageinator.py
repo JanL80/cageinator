@@ -495,6 +495,7 @@ def run_xtb_for_out_dir(
             )
 
             cmd = [
+                "/bin/bash",
                 XTB_OPT_SH,
                 "--path", str(xtb_input.resolve()),
                 "--out", str(sub.resolve()),
@@ -697,5 +698,6 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 
