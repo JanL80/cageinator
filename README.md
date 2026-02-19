@@ -3,7 +3,7 @@ A tool for automatically constructing and screening metal-organic cages from lin
 
 ---
 
-## ⚠️ Attention Notice ⚠️
+## ⚠️ Attention ⚠️
 This is a preliminary release and is currently in active development. Release versions of the style **0.0.x** indicate a development stage. The package itself, file formats, and behavior may change at any time without prior notice, and backwards compatibility is not guaranteed. Further, current/newly implemented functionalities may show unexpected behaviour until bug fixes have been applied. Use at your own risk.
 
 Since this tool is primarily developed for UNIX-based operating systems such as Linux and macOS, running Cageinator on Windows may produce unexpected behavior. While the core functionality should work, the use with external components (e.g., xTB or Open Babel) is not guaranteed in the current release. Therefore, using WSL is recommended until a future release provides better Windows support.
@@ -15,7 +15,7 @@ Since this tool is primarily developed for UNIX-based operating systems such as 
 ### Requirements
 
 - Python 3.10+ recommended
-- External tools required if optimizations are required:
+- External tools if optimizations are required:
   - xTB (S. Grimme, C. Bannwarth, P. Shushkov, J. Chem. Theory Comput. 2017, 13, 1989–2009. https://doi.org/10.1021/acs.jctc.7b00118)
   - Open Babel (N. M. O’Boyle, M. Banck, C. A. James, C. Morley, T. Vandermeersch, G. R. Hutchison, J. Cheminf. 2011, 3, 33. https://doi.org/10.1186/1758-2946-3-33)
 
