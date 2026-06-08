@@ -1,4 +1,3 @@
-
 import sys, json, re, math, copy
 from pathlib import Path
 from dataclasses import dataclass
@@ -159,7 +158,7 @@ def write_mol_strict(path: Path,
         if s in {"3", "triple"}:
             return 3
         if s in {"4", "ar", "aro", "aromatic"}:
-            return 4  # aromatic in MDL bond order
+            return 4
         if s in {"am"}:
             return 1
         try:
@@ -252,6 +251,12 @@ def golden_section(f, a, b, iters=48):
 
 ### Parse section
 
+def _is_true(v):
+    """Safely parse booleans from JSON that might be typed as strings"""
+    if isinstance(v, str):
+        return v.strip().lower() in {"true", "1", "yes"}
+    return bool(v)
+
 def unit_atoms(u):
     elems = [(a.get("el") or a.get("element") or "").capitalize() for a in u["atoms"]]
     xyz   = np.array([a["xyz"] for a in u["atoms"]], float)
@@ -264,7 +269,8 @@ def _make_nbrs(atoms, bonds):
     nbrs = [[] for _ in range(len(atoms))]
     for b in bonds or []:
         i, j = int(b["a"]), int(b["b"])
-        nbrs[i].append(j); nbrs[j].append(i)
+        if 0 <= i < len(atoms) and 0 <= j < len(atoms):
+            nbrs[i].append(j); nbrs[j].append(i)
     return nbrs
 
 def _remove_atoms_inplace(linker, remove_idxs):
@@ -314,15 +320,26 @@ def _find_carboxyl_groups(atoms, bonds):
         onbrs = [j for j in nbrs[ci] if atoms[j]["el"] == "O"]
         if len(onbrs) != 2:
             continue
+            
         oh = None
         h_on_oh = None
-        ### pick the oxygen that actually bears a terminal H (degree-1 H)
+        is_true_carboxylate = True
+        
+        ### Verify these are actually terminal carboxylate oxygens (not esters/anhydrides)
         for o in onbrs:
+            heavy_nbrs = [j for j in nbrs[o] if atoms[j]["el"] != "H"]
+            if len(heavy_nbrs) > 1:
+                is_true_carboxylate = False
+                break
+                
             hnei = [j for j in nbrs[o] if atoms[j]["el"] == "H" and len(nbrs[j]) == 1]
             if hnei:
                 oh = o
                 h_on_oh = hnei[0]
-                break
+                
+        if not is_true_carboxylate:
+            continue
+            
         out.append({"C": ci, "O": onbrs, "OH": oh, "H": h_on_oh})
     return out
 
@@ -331,6 +348,12 @@ def _is_carboxylate_oxygen(i, atoms, bonds):
     nbrs = _make_nbrs(atoms, bonds)
     if any(atoms[j]["el"] == "H" for j in nbrs[i]):             ### OH excluded
         return False
+        
+    ### Prevent ester misidentification
+    heavy_nbrs = [j for j in nbrs[i] if atoms[j]["el"] != "H"]
+    if len(heavy_nbrs) > 1:
+        return False
+        
     cnbrs = [j for j in nbrs[i] if atoms[j]["el"] == "C"]
     if len(cnbrs) != 1: return False
     c = cnbrs[0]
@@ -338,10 +361,52 @@ def _is_carboxylate_oxygen(i, atoms, bonds):
     return len(onbrs) == 2
 
 def _is_N_donor(i, atoms, bonds):
-    if atoms[i]["el"] != "N": return False
+    if atoms[i]["el"] != "N":
+        return False
     nbrs = _make_nbrs(atoms, bonds)
-    heavy_deg = sum(1 for j in nbrs[i] if atoms[j]["el"] != "H")
-    return heavy_deg <= 3                                       ### not quaternary
+    heavy_nbrs = [j for j in nbrs[i] if atoms[j]["el"] != "H"]
+    
+    ### 1. Pyridine N has exactly 2 heavy neighbors (both C) and NO hydrogens
+    if len(heavy_nbrs) != 2 or len(nbrs[i]) != 2:
+        return False
+    if atoms[heavy_nbrs[0]]["el"] != "C" or atoms[heavy_nbrs[1]]["el"] != "C":
+        return False
+        
+    ### 2. Trace 6-membered rings containing this N using DFS
+    def find_6_rings(start):
+        rings = []
+        def dfs(curr, path):
+            if len(path) == 6:
+                if start in nbrs[curr]:
+                    rings.append(path)
+                return
+            for nxt in nbrs[curr]:
+                if atoms[nxt]["el"] != "H" and nxt not in path:
+                    dfs(nxt, path + [nxt])
+        dfs(start, [start])
+        return rings
+
+    rings = find_6_rings(i)
+    if not rings:
+        return False
+        
+    ### 3. Ensure the ring is strictly a Pyridine (1 N, 5 C, sp2-hybridized)
+    for r in rings:
+        elements = [atoms[idx]["el"] for idx in r]
+        
+        if elements.count("N") == 1 and elements.count("C") == 5:
+            ### Check for aromatic/sp2 nature: no ring atom can be sp3 (max 3 heavy neighbors)
+            is_valid_aromatic = True
+            for idx in r:
+                h_deg = sum(1 for j in nbrs[idx] if atoms[j]["el"] != "H")
+                if h_deg > 3:
+                    is_valid_aromatic = False
+                    break
+            
+            if is_valid_aromatic:
+                return True
+                
+    return False
 
 def _carboxylate_O_parent_map(atoms, bonds):
     nbrs = _make_nbrs(atoms, bonds)
@@ -397,6 +462,111 @@ def _remove_atoms_with_map_inplace(linker, remove_idxs):
     linker["connectors"] = new_conns
     return idx_map
 
+def find_template_matches(linker, template):
+    """
+    Finds all sub-graph matches of `template` within `linker`.
+    Now features STRICT evaluation using on-demand cached DFS cycles.
+    """
+    l_atoms = linker.get("atoms", [])
+    l_bonds = linker.get("bonds", [])
+    l_nbrs = _make_nbrs(l_atoms, l_bonds)
+
+    t_atoms = template.get("atoms", [])
+    t_bonds = template.get("bonds", [])
+    t_nbrs = _make_nbrs(t_atoms, t_bonds)
+
+    node_rings_cache = {}
+
+    def get_rings(node_idx, req_size):
+        if (node_idx, req_size) not in node_rings_cache:
+            rings = []
+            def dfs(curr, path):
+                if len(path) == req_size:
+                    if node_idx in l_nbrs[curr]:
+                        r = tuple(sorted(path))
+                        if r not in rings:
+                            rings.append(r)
+                    return
+                for nxt in l_nbrs[curr]:
+                    if nxt not in path:
+                        dfs(nxt, path + [nxt])
+            dfs(node_idx, [node_idx])
+            node_rings_cache[(node_idx, req_size)] = rings
+        return node_rings_cache[(node_idx, req_size)]
+
+    matches = []
+
+    def backtrack(t_idx, current_mapping):
+        if t_idx == len(t_atoms):
+            if _is_true(template.get("exact_subgraph")) or _is_true(template.get("induced_subgraph")):
+                for ta1 in range(len(t_atoms)):
+                    for ta2 in range(ta1 + 1, len(t_atoms)):
+                        t_bonded = ta2 in t_nbrs[ta1]
+                        l_bonded = current_mapping[ta2] in l_nbrs[current_mapping[ta1]]
+                        if t_bonded != l_bonded:
+                            return
+            
+            matches.append(current_mapping.copy())
+            return
+
+        t_atom = t_atoms[t_idx]
+        t_el = t_atom.get("el") or t_atom.get("element")
+        t_deg = len(t_nbrs[t_idx])
+
+        for l_idx, l_atom in enumerate(l_atoms):
+            l_el = l_atom.get("el") or l_atom.get("element")
+            
+            ### Constraints for a valid match
+            if sanitize_element(l_el) != sanitize_element(t_el): 
+                continue
+            if len(l_nbrs[l_idx]) < t_deg: 
+                continue
+            if l_idx in current_mapping.values(): 
+                continue
+            
+            if "heavy_degree" in t_atom:
+                l_heavy = sum(1 for n in l_nbrs[l_idx] if sanitize_element(l_atoms[n].get("el", "")) != "H")
+                if l_heavy != int(t_atom["heavy_degree"]):
+                    continue
+                    
+            if "total_degree" in t_atom:
+                if len(l_nbrs[l_idx]) != int(t_atom["total_degree"]):
+                    continue
+
+            if "ring_size" in t_atom or "ring_heteroatoms" in t_atom:
+                req_size = int(t_atom.get("ring_size", 6))
+                my_rings = get_rings(l_idx, req_size)
+                
+                if "ring_size" in t_atom and not my_rings:
+                    continue
+                    
+                if "ring_heteroatoms" in t_atom:
+                    req_het = int(t_atom["ring_heteroatoms"])
+                    valid_het = False
+                    for r in my_rings:
+                        het_count = sum(1 for idx in r if sanitize_element(l_atoms[idx].get("el", "")) not in ("C", "H"))
+                        if het_count == req_het:
+                            valid_het = True
+                            break
+                    if not valid_het:
+                        continue
+
+            valid_topology = True
+            for prev_t_idx in t_nbrs[t_idx]:
+                if prev_t_idx < t_idx:
+                    prev_l_idx = current_mapping[prev_t_idx]
+                    if prev_l_idx not in l_nbrs[l_idx]:
+                        valid_topology = False
+                        break
+            
+            if valid_topology:
+                current_mapping[t_idx] = l_idx
+                backtrack(t_idx + 1, current_mapping)
+                del current_mapping[t_idx]
+
+    backtrack(0, {})
+    return matches
+
 
 
 ### charge logic section
@@ -450,35 +620,25 @@ def _choose_donor_pair_geom(linker, donors):
 
     return int(best_pair[0]), int(best_pair[1])
     
-def infer_donors(linker):
+def infer_donors(linker, templates=None):
     _sanitize_atoms_inplace(linker)
     atoms = linker.get("atoms", []) or []
     bonds = linker.get("bonds", []) or []
     if not atoms:
         raise ValueError("no atoms in linker")
 
-    ### detect carboxyl groups and map O->group
+    ### detect carboxyl groups and map O->group for deprotonation and deduplication
     groups = _find_carboxyl_groups(atoms, bonds)
     o_to_group = {}
     for g in groups:
         for o in g["O"]:
             o_to_group[o] = g
 
-    ### normalized group records, deterministic order by parent carbon index
-    carb_groups = []
-    for g in groups:
-        carb_groups.append({
-            "C": g["C"],
-            "O": list(g["O"]),
-            "has_H": (g.get("H") is not None),
-            "H": g.get("H")
-        })
-    carb_groups.sort(key=lambda x: x["C"])
+    donors_set = set()
+    seen_groups = set()  ### tracks parent carbons to prevent picking both O's in a carboxylate
+    template_deprot_flags = {} ### maps matched donor atom index -> should it deprotonate?
 
-    donors: list[int] = []
-    seen_groups: set[int] = set()
-
-    ### explicit donor connectors
+    ### 1. Explicit donor connectors
     for c in (linker.get("connectors") or []):
         if c.get("role") != "donor":
             continue
@@ -488,47 +648,85 @@ def infer_donors(linker):
         ai = int(ai)
         if not (0 <= ai < len(atoms)):
             continue
+        
+        g = o_to_group.get(ai)
+        if g is not None:
+            pc = g["C"]
+            if pc in seen_groups:
+                continue
+            seen_groups.add(pc)
+            
+        donors_set.add(ai)
 
-        if atoms[ai]["el"] == "N":
-            if _is_N_donor(ai, atoms, bonds):
-                donors.append(ai)
-        else:
-            g = o_to_group.get(ai)
-            if g is not None:
-                pc = g["C"]
-                if pc in seen_groups:
-                    continue
-                donors.append(ai)
-                seen_groups.add(pc)
+    ### 2. STRICT Mode vs Fallback Mode
+    if templates is not None:
+        for template in templates:
+            donor_t_indices = [
+                i for i, a in enumerate(template.get("atoms", [])) 
+                if _is_true(a.get("is_donor", False))
+            ]
+            
+            matches = find_template_matches(linker, template)
+            for match in matches:
+                for d_t_idx in donor_t_indices:
+                    matched_idx = match[d_t_idx]
+                    
+                    g = o_to_group.get(matched_idx)
+                    if g is not None:
+                        pc = g["C"]
+                        if pc in seen_groups:
+                            continue
+                        seen_groups.add(pc)
+                        
+                    donors_set.add(matched_idx)
 
-    ### COO− groups
-    for cg in carb_groups:
-        if not cg["has_H"]:
-            oidx = int(min(cg["O"]))
-            if cg["C"] not in seen_groups and oidx not in donors:
-                donors.append(oidx)
-                seen_groups.add(cg["C"])
+                    if _is_true(template.get("atoms", [])[d_t_idx].get("deprotonate", False)):
+                        template_deprot_flags[matched_idx] = True
 
-    ### N donors
-    Ns = [i for i in range(len(atoms)) if _is_N_donor(i, atoms, bonds)]
-    for n in sorted(Ns):
-        if n not in donors:
-            donors.append(int(n))
+        if not donors_set:
+            name = linker.get("name") or linker.get("id") or "linker"
+            print(f"Skipping {name}: Strict mode active, but no template matches found.")
+            return None
+            
+    else:
+        ### 3. Fallback Heuristics (only triggers if templates == None)
+        carb_groups = []
+        for g in groups:
+            carb_groups.append({
+                "C": g["C"],
+                "O": list(g["O"]),
+                "has_H": (g.get("H") is not None),
+                "H": g.get("H")
+            })
+        carb_groups.sort(key=lambda x: x["C"])
 
-    ### fallback COOH groups
-    for cg in carb_groups:
-        if cg["has_H"]:
-            oidx = int(min(cg["O"]))
-            if cg["C"] not in seen_groups and oidx not in donors:
-                donors.append(oidx)
-                seen_groups.add(cg["C"])
+        ### COO− groups
+        for cg in carb_groups:
+            if not cg["has_H"]:
+                oidx = int(min(cg["O"]))
+                if cg["C"] not in seen_groups and oidx not in donors_set:
+                    donors_set.add(oidx)
+                    seen_groups.add(cg["C"])
 
-    ### dedupe for safety
-    donors = list(dict.fromkeys(donors))
+        ### N donors
+        Ns = [i for i in range(len(atoms)) if _is_N_donor(i, atoms, bonds)]
+        for n in sorted(Ns):
+            donors_set.add(int(n))
+
+        ### fallback COOH groups
+        for cg in carb_groups:
+            if cg["has_H"]:
+                oidx = int(min(cg["O"]))
+                if cg["C"] not in seen_groups and oidx not in donors_set:
+                    donors_set.add(oidx)
+                    seen_groups.add(cg["C"])
+
+    ### Dedupe and convert to list
+    donors = list(donors_set)
 
     if len(donors) < 2:
         name = linker.get("name") or linker.get("id") or "linker"
-        print(f"Skipping {name}: only {len(donors)} eligible donors")
+        print(f"Skipping {name}: only {len(donors)} eligible donors found.")
         return None
 
     ### geometric choice of the two least sterically blocked donors
@@ -543,17 +741,21 @@ def infer_donors(linker):
     rb_bonds = copy.deepcopy(linker.get("bonds", []) or [])
     rb_conns = copy.deepcopy(linker.get("connectors", []) or [])
 
-    remove: List[int] = []
+    remove = []
     nbrs = _make_nbrs(atoms, bonds)
     for d in chosen:
         g = o_to_group.get(d)
-        if g is None:
-            continue
-        h_idx = g.get("H")
-        if h_idx is None:
-            continue
-        if 0 <= h_idx < len(atoms) and atoms[h_idx]["el"] == "H" and len(nbrs[h_idx]) == 1:
-            remove.append(int(h_idx))
+        if g is not None:
+            h_idx = g.get("H")
+            if h_idx is not None and 0 <= h_idx < len(atoms) and atoms[h_idx]["el"] == "H" and len(nbrs[h_idx]) == 1:
+                remove.append(int(h_idx))
+                
+        elif template_deprot_flags.get(d, False):
+            terminal_hs = [nbr for nbr in nbrs[d] if atoms[nbr]["el"] == "H" and len(nbrs[nbr]) == 1]
+            if terminal_hs:
+                remove.append(int(terminal_hs[0]))
+
+    remove = list(set(remove))
 
     if remove:
         def _elt_counts(A):
@@ -634,9 +836,9 @@ def make_node_type(node_json) -> NodeType:
 
 
 
-def make_linker_type(link_json) -> Optional[LinkerType]:
+def make_linker_type(link_json, templates=None) -> Optional[LinkerType]:
     _sanitize_atoms_inplace(link_json)
-    pair = infer_donors(link_json)
+    pair = infer_donors(link_json, templates)
     if pair is None:
         name = link_json.get("name") or link_json.get("id") or "linker"
         print(f"Skipping {name}: insufficient eligible donors")
@@ -665,7 +867,7 @@ def _int_or_zero(x):
     try: return int(round(float(x)))
     except Exception: return 0
 
-def assemble_shape(node_json, linker_json, out_dir: Path):
+def assemble_shape(node_json, linker_json, out_dir: Path, templates=None):
     node_name   = Path(sys.argv[1]).stem
     linker_name = Path(sys.argv[2]).stem
 
@@ -674,7 +876,7 @@ def assemble_shape(node_json, linker_json, out_dir: Path):
     ### count pre-existing COO− BEFORE mutating linker
     pre_dep0 = _count_preexisting_carboxylate_deprot(copy.deepcopy(linker_json))
 
-    lt = make_linker_type(linker_json)
+    lt = make_linker_type(linker_json, templates)
     if lt is None:
         print("No build: linker ineligible")
         return None
@@ -683,7 +885,17 @@ def assemble_shape(node_json, linker_json, out_dir: Path):
     ### ignore declared linker charge; derive from geometry
     M = M_MULTIPLICITY
     L = L_MULTIPLICITY
-    q_node = _int_or_zero((node_json.get("composition") or {}).get("charge"))
+    
+    ### Safely extract node charge from either the composition block or top-level
+    q_comp = (node_json.get("composition") or {}).get("charge")
+    q_top = node_json.get("charge")
+    if q_comp is not None:
+        q_node = _int_or_zero(q_comp)
+    elif q_top is not None:
+        q_node = _int_or_zero(q_top)
+    else:
+        q_node = 0
+        
     added_dep = int(getattr(lt, "deprot_per_linker", 0))
     q_linker_final = - (pre_dep0 + added_dep)
     q_total = M*q_node + L*q_linker_final
@@ -845,10 +1057,58 @@ def assemble_shape(node_json, linker_json, out_dir: Path):
         all_bonds.append({"a": metal_j, "b": donor2_global, "type": "1"})
 
     all_xyz_np = np.array(all_xyz, float)
+
+    ### Adjacency list to exclude bonded (1-2) and angle (1-3) pairs from collision check
+    N_atoms = len(all_elems)
+    adj = [[] for _ in range(N_atoms)]
+    for b in all_bonds:
+        u, v = b["a"], b["b"]
+        adj[u].append(v)
+        adj[v].append(u)
+
+    exclude_pairs = set()
+    for i in range(N_atoms):
+        for j in adj[i]:
+            exclude_pairs.add((i, j))
+            exclude_pairs.add((j, i))
+            for k in adj[j]:
+                exclude_pairs.add((i, k))
+                exclude_pairs.add((k, i))
+
+    ### Vectorized pairwise distance calculation
+    diff = all_xyz_np[:, np.newaxis, :] - all_xyz_np[np.newaxis, :, :]
+    d2_matrix = np.sum(diff**2, axis=-1)
+
+    is_H = np.array([e == "H" for e in all_elems])
+    heavy_mask = ~is_H
+
+    ### Masks for interaction types
+    mask_heavy_heavy = heavy_mask[:, np.newaxis] & heavy_mask[np.newaxis, :]
+    mask_heavy_H = (heavy_mask[:, np.newaxis] & is_H[np.newaxis, :]) | (is_H[:, np.newaxis] & heavy_mask[np.newaxis, :])
+
+    ### Ignore upper triangle and topological neighbors to prevent false positives
+    d2_matrix[np.tril_indices(N_atoms)] = np.inf
+    for (u, v) in exclude_pairs:
+        d2_matrix[u, v] = np.inf
+        d2_matrix[v, u] = np.inf
+
+    ### Strict thresholds: Heavy-Heavy < 1.5 A, Heavy-H < 0.5 A
+    clashes_heavy_heavy = np.sum((d2_matrix < 1.5**2) & mask_heavy_heavy)
+    clashes_heavy_H = np.sum((d2_matrix < 0.5**2) & mask_heavy_H)
+    total_clashes = clashes_heavy_heavy + clashes_heavy_H
+
     stoich_tag = f"M{M}L{L}_{shape_name}"
     q_tag = f"Q{q_total:+d}"
     mol_name = f"{node_name}__{linker_name}__{stoich_tag}__{q_tag}"
-    out = out_dir / f"{node_name}__{linker_name}__{stoich_tag}__{q_tag}.mol"
+
+    ### Allow just a little collision (up to 5 atom pairs)
+    if total_clashes > 5:
+        print(f"Skipping {linker_name}: detected {total_clashes} severe non-hydrogen collisions.")
+        ### Explicitly create an empty directory to register the skipped run in the pipeline
+        (out_dir / mol_name).mkdir(parents=True, exist_ok=True)
+        return None
+
+    out = out_dir / f"{mol_name}.mol"
 
     comment = (
         f"{shape_name}; s={s_opt:.3f}; d12={lt.d12:.3f} A; M-N={M_N:.2f} A; "
@@ -865,15 +1125,32 @@ def assemble_shape(node_json, linker_json, out_dir: Path):
 
 ### Command-Line Interaction
 def main():
-    if len(sys.argv)!=4:
+    assemblers_dir = Path(__file__).resolve().parent
+    template_dir = assemblers_dir / "coordination_templates"
+    
+    templates = None 
+    
+    if template_dir.exists() and template_dir.is_dir():
+        templates = []
+        for p in template_dir.glob("*.json"):
+            templates.append(load_json_lenient(p))
+        print(f"Strict Template Mode Active: Loaded {len(templates)} templates from '{template_dir}'")
+    else:
+        print(f"Warning: '{template_dir}' directory not found. Operating in Fallback Heuristic mode.")
+
+    if len(sys.argv) != 4:
         print("Usage: python lantern.py NODE.json LINKER.json OUT_DIR"); sys.exit(1)
+        
     node = load_json_lenient(Path(sys.argv[1]))
     linker = load_json_lenient(Path(sys.argv[2]))
 
-    out_dir = Path(sys.argv[3]); out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(sys.argv[3])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
     try:
-        fn = assemble_shape(node, linker, out_dir)
-        print( "\n", "Wrote", fn)
+        fn = assemble_shape(node, linker, out_dir, templates)
+        if fn:
+            print( "\n", "Wrote", fn)
     except Exception as e:
         print("Error:", e); sys.exit(2)
 

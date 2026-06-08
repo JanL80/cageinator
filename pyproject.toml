@@ -37,4 +37,4 @@ include = ["cage_assemblers*", "calculation*", "interfaces*", "utility_functions
 version = { attr = "cageinator.__version__" }
 
 [tool.setuptools.package-data]
-calculation = ["xtb_opt.sh"]
+"cage_assemblers" = ["coordination_templates/*.json"]

@@ -1,0 +1,47 @@
+{
+  "name": "Pyridine",
+  "induced_subgraph": true,
+  "atoms": [
+    {
+      "element": "N",
+      "is_donor": true,
+      "heavy_degree": 2,
+      "total_degree": 2,
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    },
+    {
+      "element": "C",
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    },
+    {
+      "element": "C",
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    },
+    {
+      "element": "C",
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    },
+    {
+      "element": "C",
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    },
+    {
+      "element": "C",
+      "ring_size": 6,
+      "ring_heteroatoms": 1
+    }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1 },
+    { "a": 1, "b": 2 },
+    { "a": 2, "b": 3 },
+    { "a": 3, "b": 4 },
+    { "a": 4, "b": 5 },
+    { "a": 5, "b": 0 }
+  ]
+}
