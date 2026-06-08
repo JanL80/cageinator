@@ -199,7 +199,7 @@ Within each assembly subfolder, optimization outputs may include:
 If you use this software in academic work, please cite in this style:
 
 
-**Cageinator**: J. Leodolter, *cageinator* (Version X.Y.Z), GitHub: GitHub: https://github.com/JanL80/cageinator, manuscript in preparation (2026).  
+**Cageinator**: J. Leodolter, *cageinator* (Version X.Y.Z), GitHub: https://github.com/JanL80/cageinator, manuscript in preparation (2026).  
 
 <br/>
 
