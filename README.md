@@ -194,6 +194,14 @@ Within each assembly subfolder, optimization outputs may include:
 
 ---
 
+## Acknowledgments & Third-Party Licenses
+
+**The Cageinator** utilizes **JSmol** to handle the 3D rendering of molecules in the local web interface. 
+
+JSmol (and its parent project, Jmol) is free, open-source software distributed under the [GNU Lesser General Public License (LGPL)](http://www.gnu.org/licenses/lgpl.html). The original source code, documentation, and further information for JSmol can be found at the [official Jmol website](https://jmol.sourceforge.net/).
+
+---
+
 ## Citation
 
 If you use this software in academic work, please cite in this style:

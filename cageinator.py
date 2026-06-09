@@ -1,5 +1,5 @@
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 
 
@@ -593,6 +593,9 @@ def parse_args(argv=None):
     ap.add_argument("--menu",
                     action="store_true",
                     help="Interactive menu mode. Default: CLI batch mode")
+    ap.add_argument("--web", 
+                    action="store_true", 
+                    help="Launch the interactive Web UI backend.")
     ap.add_argument("--nodes",
                     help="Folder with node JSON files")
     ap.add_argument("--linkers",
@@ -643,6 +646,19 @@ def main(argv=None) -> int:
             assemble=assemble,
             run_xtb_for_out_dir=run_xtb_for_out_dir,
             SHAPES=SHAPES,
+        )
+        return 0
+    
+    if args.web:
+        from interfaces.web_mode import run_web
+        run_web(
+            args=args,
+            collect_linkers=collect_linkers,
+            collect_nodes=collect_nodes,
+            assemble=assemble,
+            run_xtb_for_out_dir=run_xtb_for_out_dir,
+            run_obabel_for_out_dir=run_obabel_for_out_dir,
+            normalize_shapes=normalize_shapes
         )
         return 0
 

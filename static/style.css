@@ -1,0 +1,183 @@
+:root {
+    --bg-color: #1e1e1e;
+    --sidebar-bg: #252526;
+    --text-color: #cccccc;
+    --accent-hover: #334048;
+    --accent-color: #00637C;
+    --border-color: #3e3e42;
+    --error-color: #df3535;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: row; 
+    overflow: hidden; 
+}
+
+.sidebar {
+    flex: 0 0 320px; 
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.header-box {
+    background-color: #afafaf;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.header-box h2 {
+    color: #000000;
+    margin: 0 0 5px 0;
+}
+
+.header-box .subtitle {
+    color: #414141;
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.control-group { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 0.9em; font-weight: bold; }
+
+select, input { 
+    width: 100%; 
+    height: 38px; 
+    padding: 8px; 
+    box-sizing: border-box; 
+    background-color: var(--bg-color); 
+    color: var(--text-color); 
+    border: 1px solid var(--border-color); 
+    border-radius: 4px; 
+    outline: none; 
+    font-family: inherit;
+    font-size: 0.9em;
+}
+
+button { padding: 10px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; margin-top: 10px; }
+button:hover:not(:disabled) { background-color: var(--accent-hover); }
+button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 10px 0; width: 100%; }
+
+.main-viewer {
+    flex: 1 1 auto; 
+    position: relative;
+    background-color: #1e1e1e;
+}
+
+.viewer-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.right-panel {
+    flex: 0 0 350px; 
+    background-color: var(--sidebar-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    z-index: 10;
+}
+
+.panel-section {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.top-half { border-bottom: 1px solid var(--border-color); }
+
+.panel-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.log-container, .history-container {
+    flex: 1;
+    min-height: 0; 
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85em;
+    padding-right: 5px;
+}
+
+.log-entry {
+    background-color: var(--bg-color);
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent-color);
+    word-wrap: break-word;
+    flex-shrink: 0;
+}
+.log-entry.error { border-left-color: var(--error-color); }
+.log-time { color: #888; font-size: 0.9em; margin-right: 5px; }
+
+.history-item {
+    background-color: var(--bg-color);
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+.history-item:hover { border-color: var(--accent-color); }
+
+.history-item-title { 
+    font-weight: bold; 
+    margin-bottom: 4px; 
+    font-size: 0.85em; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.history-item-subtitle { color: #888; font-size: 0.8em; }
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--border-color); 
+    border-top-color: #ffffff; 
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-sizing: border-box;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

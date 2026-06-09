@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cageinator Web</title>
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/jsmol/JSmol.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        
+        <div class="sidebar-header">
+            <div class="header-box">
+                <h2>Cageinator</h2>
+                <p class="subtitle">Molecular Cage Assembler</p>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="nodes-path">Nodes Directory</label>
+            <input type="text" id="nodes-path" placeholder="/path/to/nodes">
+        </div>
+        <div class="control-group">
+            <label for="linkers-path">Linkers Directory</label>
+            <input type="text" id="linkers-path" placeholder="/path/to/linkers">
+        </div>
+        <div class="control-group">
+            <label for="out-path">Output Directory</label>
+            <input type="text" id="out-path" placeholder="/path/to/output">
+        </div>
+        <button id="btn-load-dirs" onclick="loadDirectories()">Load Directories</button>
+
+        <hr>
+
+        <div class="control-group">
+            <label for="node-select">Node</label>
+            <select id="node-select"><option value="">Awaiting directories...</option></select>
+        </div>
+
+        <div class="control-group">
+            <label for="linker-select">Linker</label>
+            <select id="linker-select"><option value="">Awaiting directories...</option></select>
+        </div>
+
+        <div class="control-group">
+            <label for="shape-select">Shape</label>
+            <select id="shape-select"><option value="">Awaiting directories...</option></select>
+        </div>
+
+        <button id="btn-build" onclick="buildCage()" disabled>Assemble Cage</button>
+
+        <hr>
+
+        <div class="control-group">
+            <label for="opt-method">Optimization Method</label>
+            <select id="opt-method">
+                <option value="xtb">xTB (GFN-FF)</option>
+                <option value="obabel">Open Babel (UFF/GAFF)</option>
+            </select>
+        </div>
+
+        <button id="btn-optimize" onclick="optimizeCage()" disabled>Optimize Assembly</button>
+    </div>
+
+    <div class="main-viewer">
+        <div id="viewer-container" class="viewer-container"></div>
+    </div>
+
+    <div class="right-panel">
+        <div class="panel-section top-half">
+            <h3>Activity Log</h3>
+            <div id="status-box" class="log-container">
+            </div>
+        </div>
+        
+        <div class="panel-section bottom-half">
+            <h3>Built Cages</h3>
+            <div id="history-list" class="history-container">
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
