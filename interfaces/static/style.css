@@ -250,3 +250,58 @@ hr { border: 0; border-top: 1px solid var(--border-color); margin: 10px 0; width
 .header-box h2 a:hover {
     color: var(--accent-color);
 }
+
+
+
+/* Settings for Mobile Display */
+
+@media (max-width: 900px) {
+    body, html {
+        flex-direction: column;
+        overflow-y: auto; 
+        height: auto; 
+    }
+
+    .sidebar {
+        flex: none;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        overflow-y: visible;
+    }
+
+    .main-viewer {
+        flex: none;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        height: auto;
+        min-height: auto;
+    }
+
+    .right-panel {
+        flex: none;
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .panel-section {
+        flex: none;
+        height: auto;
+        padding-bottom: 25px;
+    }
+
+    .log-container, .history-container {
+        height: 300px;
+        min-height: 300px;
+        max-height: 300px;
+        overflow-y: auto;
+        
+        border: 1px solid var(--border-color); 
+        padding: 5px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.2); 
+    }
+}
