@@ -14,35 +14,27 @@
         
         <div class="sidebar-header">
             <div class="header-box">
-                <h2>Cageinator</h2>
+                <h2><a href="https://github.com/JanL80/cageinator" target="_blank" rel="noopener noreferrer">Cageinator</a></h2>
                 <p class="subtitle">Molecular Cage Assembler</p>
             </div>
         </div>
 
-        <div class="control-group">
-            <label for="nodes-path">Nodes Directory</label>
-            <input type="text" id="nodes-path" placeholder="/path/to/nodes">
-        </div>
-        <div class="control-group">
-            <label for="linkers-path">Linkers Directory</label>
-            <input type="text" id="linkers-path" placeholder="/path/to/linkers">
-        </div>
-        <div class="control-group">
-            <label for="out-path">Output Directory</label>
-            <input type="text" id="out-path" placeholder="/path/to/output">
-        </div>
-        <button id="btn-load-dirs" onclick="loadDirectories()">Load Directories</button>
+        <input type="file" id="upload-node-file" style="display:none;" accept="*/*">
+        <input type="file" id="upload-linker-file" style="display:none;" accept="*/*">
+
+        <button class="upload-btn" onclick="document.getElementById('upload-node-file').click()">Upload Node File</button>
+        <button class="upload-btn" onclick="document.getElementById('upload-linker-file').click()">Upload Linker File</button>
 
         <hr>
 
         <div class="control-group">
             <label for="node-select">Node</label>
-            <select id="node-select"><option value="">Awaiting directories...</option></select>
+            <select id="node-select"><option value="">Awaiting uploads...</option></select>
         </div>
 
         <div class="control-group">
             <label for="linker-select">Linker</label>
-            <select id="linker-select"><option value="">Awaiting directories...</option></select>
+            <select id="linker-select"><option value="">Awaiting uploads...</option></select>
         </div>
 
         <div class="control-group">
@@ -58,14 +50,36 @@
             <label for="opt-method">Optimization Method</label>
             <select id="opt-method">
                 <option value="xtb">xTB (GFN-FF)</option>
-                <option value="obabel">Open Babel (UFF/GAFF)</option>
+                <option value="obabel">Open Babel (GAFF)</option>
             </select>
         </div>
 
         <button id="btn-optimize" onclick="optimizeCage()" disabled>Optimize Assembly</button>
+
+        <hr>
+        
+        <button id="btn-download" class="download-btn" onclick="downloadCage()" disabled>Download Result (.zip)</button>
+        <button id="btn-download-ws" class="download-btn" onclick="downloadWorkspace()">Download Workspace (.zip)</button>
+        <button id="btn-clear" class="clear-btn" onclick="clearSession()">Clear Session</button>
+
     </div>
 
     <div class="main-viewer">
+        
+        <div id="advanced-menu" onclick="toggleAdvancedMenu()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </div>
+        
+        <div id="advanced-overlay" class="overlay-menu" style="display: none;">
+            <div class="overlay-content">
+                <h3>Coming Soon ...</h3>
+            </div>
+        </div>
+
         <div id="viewer-container" class="viewer-container"></div>
     </div>
 

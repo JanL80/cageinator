@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
   "openbabel-wheel>=3.1.1.22",
   "numpy",
+  "flask",
 ]
 
 [project.scripts]
@@ -38,3 +39,4 @@ version = { attr = "cageinator.__version__" }
 
 [tool.setuptools.package-data]
 "cage_assemblers" = ["coordination_templates/*.json"]
+"interfaces" = ["static/*", "static/**/*"]
