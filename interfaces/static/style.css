@@ -2,12 +2,12 @@
     --bg-color: #1e1e1e;
     --sidebar-bg: #252526;
     --text-color: #cccccc;
-    --accent-hover: #334048;
-    --accent-color: #01637c;
+    --accent-color: #0696ba;
+    --accent-hover: #067d9b;
     --border-color: #3e3e42;
     --error-color: #df3535;
-    --success-color: #2e7d32;
-    --success-hover: #1b5e20;
+    --success-color: #045468;
+    --success-hover: #034555;
 }
 
 body, html {
@@ -40,7 +40,8 @@ body, html {
     background-color: #afafaf;
     border-radius: 15px;
     padding: 15px;
-    margin-bottom: 15px;
+    margin-top: 15px;
+    margin-bottom: 0px;
     text-align: center;
 }
 
@@ -85,7 +86,7 @@ button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
 .upload-btn:hover:not(:disabled) { background-color: var(--accent-hover); }
 .download-btn { background-color: var(--success-color); margin-top: 0; }
 .download-btn:hover:not(:disabled) { background-color: var(--success-hover); }
-.clear-btn { background-color: var(--error-color); margin-top: 25px; }
+.clear-btn { background-color: var(--error-color); margin-top: 0px; }
 .clear-btn:hover:not(:disabled) { background-color: #b71c1c; }
 
 hr { border: 0; border-top: 1px solid var(--border-color); margin: 10px 0; width: 100%; }

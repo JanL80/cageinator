@@ -19,6 +19,8 @@
             </div>
         </div>
 
+        <hr>
+
         <input type="file" id="upload-node-file" style="display:none;" accept="*/*">
         <input type="file" id="upload-linker-file" style="display:none;" accept="*/*">
 
@@ -58,8 +60,11 @@
 
         <hr>
         
-        <button id="btn-download" class="download-btn" onclick="downloadCage()" disabled>Download Result (.zip)</button>
-        <button id="btn-download-ws" class="download-btn" onclick="downloadWorkspace()">Download Workspace (.zip)</button>
+        <button id="btn-download" class="download-btn" onclick="downloadCage()" disabled>Download current Cage (.zip)</button>
+        <button id="btn-download-ws" class="download-btn" onclick="downloadWorkspace()">Download entire Workspace (.zip)</button>
+        
+        <hr>
+        
         <button id="btn-clear" class="clear-btn" onclick="clearSession()">Clear Session</button>
 
     </div>
