@@ -29,6 +29,27 @@ At a directory of choice:
 
 ---
 
+### Docker Installation (Optional)
+
+For an isolated environment or to host the Web UI on a dedicated server, Cageinator includes a complete Docker configuration. This eliminates the need to manually install external dependencies like xTB on a host system.
+
+To build the Docker image, ensure the provided shell script is executable and run it:
+
+    chmod +x build_docker.sh
+    ./build_docker.sh
+
+Once built, the Cageinator can be run in two ways:
+
+**Web UI:** Launch the interactive web interface as a background service accessible at `http://localhost:5001`:
+
+    docker run -d -p 5001:5001 --name cageinator_web cageinator:tag --web
+
+**CLI Batch Processing:** Mount a local directory as a volume (`-v`) to process files directly from a host machine:
+
+    docker run --rm -v /path/to/local/data:/data cageinator:tag --nodes /data/nodes --linkers /data/linkers --out /data/output --xtb-opt
+
+---
+
 ## Usage
 
 ### Overview
@@ -38,6 +59,7 @@ The cageinator builds metal-organic cages by combining node JSON files with link
 The program (currently) supports two modes:
 
 - **CLI batch mode (default)**: runs a full batch pipeline from folders
+- **Web mode**: launches an interactive web ui instance to access locally
 - **Interactive menu mode (deprecated; will be removed in future versions)**: launches an interactive interface
 
 ### Input expectations:
@@ -142,7 +164,15 @@ If both `--obabel-opt` and `--xtb-opt` are enabled, force-field optimization is 
 cageinator --nodes ./nodes --linkers ./linkers --out ./out --obabel-opt --xtb-opt --obabel-flags "--ff gaff --steps 500" --xtb-flags "--method gfn2 --threads 8"
 ```
 
-### Interactive menu mode (deprecated; will be removed in future versions)
+### Example 6: Interactive Web UI Mode
+
+Cageinator features a built-in web interface for interactive cage assembly, 3D visualization (via JSmol), and demonstration purposes. To launch the web server locally:
+
+```bash
+cageinator --web
+```
+
+### Example 7: Interactive menu mode (deprecated; will be removed in future versions)
 
 Launch the interactive interface:
 
@@ -167,7 +197,7 @@ Typical output directories under `OUT_DIR`:
 
 Within each assembly subfolder, optimization outputs may include:
 - `ff_opt.mol`, `ff_failed_last.mol`, `ff_opt.log`
-- `xtb_opt.xyz`, `xtb_failed_last.xyz`, `xtb_opt.log`, and `tb_opt.trj`
+- `xtb_opt.xyz`, `xtb_failed_last.xyz`, `xtb_opt.log`, and `xtb_opt.trj`
 
 ---
 
