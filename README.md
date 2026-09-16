@@ -236,6 +236,7 @@ Within each assembly subfolder, optimization outputs may include:
   "notes": "Use as a node; vectors define donor approach directions."
 }
 ```
+By providing the above-given JSON structure as "node.json" (replacing "node" with whatever square-planar metal center is desired) inside the nodes directory, it can be used for assembly. Adapting the used metal is as easy as replacing "Pd" with the required metal atom (and respective charge) inside the JSON file.
 
 ---
 
