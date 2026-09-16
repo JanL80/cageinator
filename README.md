@@ -209,6 +209,36 @@ Within each assembly subfolder, optimization outputs may include:
 
 ---
 
+## Example for Node JSON-Files
+
+```bash
+{
+  "schema_version": "1.0",
+  "unit_id": "PdII_sqplanar_ideal",
+  "class": "metal_node",
+  "gbu_type": "4-planar",
+  "composition": { "formula": "Pd", "charge": 2, "spin_mult": 1 },
+  "provenance": { "source": "idealized", "ref": "", "method": "parametric generator" },
+
+  "atoms": [{ "idx": 0, "el": "Pd", "xyz": [0.0, 0.0, 0.0] }],
+  "bonds": [],
+
+  "connectors": [
+    { "id": "site_x+", "atom_index": 0, "element": "Pd", "vector": [ 1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_x-", "atom_index": 0, "element": "Pd", "vector": [-1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_y+", "atom_index": 0, "element": "Pd", "vector": [ 0, 1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_y-", "atom_index": 0, "element": "Pd", "vector": [ 0,-1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} }
+  ],
+
+  "coordination_count": 4,
+  "coordination_atoms": [0,0,0,0],
+  "geometry_hints": { "ideal_bite_angle_deg": 90 },
+  "notes": "Use as a node; vectors define donor approach directions."
+}
+```
+
+---
+
 ## To-Do
 - Robust error handling across the pipeline
 - Resume/checkpointing to avoid rerunning failed or completed steps
