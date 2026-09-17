@@ -69,6 +69,35 @@ The program (currently) supports two modes:
   - `*.xyz`/`*.mol` are converted to JSON internally
   - currently, xyz files are recommended as input
 
+### Example for Node JSON-Files
+
+```bash
+{
+  "schema_version": "1.0",
+  "unit_id": "PdII_sqplanar_ideal",
+  "class": "metal_node",
+  "gbu_type": "4-planar",
+  "composition": { "formula": "Pd", "charge": 2, "spin_mult": 1 },
+  "provenance": { "source": "idealized", "ref": "", "method": "parametric generator" },
+
+  "atoms": [{ "idx": 0, "el": "Pd", "xyz": [0.0, 0.0, 0.0] }],
+  "bonds": [],
+
+  "connectors": [
+    { "id": "site_x+", "atom_index": 0, "element": "Pd", "vector": [ 1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_x-", "atom_index": 0, "element": "Pd", "vector": [-1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_y+", "atom_index": 0, "element": "Pd", "vector": [ 0, 1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
+    { "id": "site_y-", "atom_index": 0, "element": "Pd", "vector": [ 0,-1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} }
+  ],
+
+  "coordination_count": 4,
+  "coordination_atoms": [0,0,0,0],
+  "geometry_hints": { "ideal_bite_angle_deg": 90 },
+  "notes": "Use as a node; vectors define donor approach directions."
+}
+```
+By providing the above-given JSON structure as "node.json" (replacing "node" with whatever square-planar metal center is desired) inside the nodes directory, it can be used for assembly. Adapting the used metal is as easy as replacing "Pd" with the required metal atom (and respective charge) inside the JSON file.
+
 ### Commandline call
 
 ```bash
@@ -206,37 +235,6 @@ Within each assembly subfolder, optimization outputs may include:
 - `0`: success
 - `2`: usage error / missing inputs / invalid shape / filesystem error
 - `130`: interrupted (Ctrl+C)
-
----
-
-## Example for Node JSON-Files
-
-```bash
-{
-  "schema_version": "1.0",
-  "unit_id": "PdII_sqplanar_ideal",
-  "class": "metal_node",
-  "gbu_type": "4-planar",
-  "composition": { "formula": "Pd", "charge": 2, "spin_mult": 1 },
-  "provenance": { "source": "idealized", "ref": "", "method": "parametric generator" },
-
-  "atoms": [{ "idx": 0, "el": "Pd", "xyz": [0.0, 0.0, 0.0] }],
-  "bonds": [],
-
-  "connectors": [
-    { "id": "site_x+", "atom_index": 0, "element": "Pd", "vector": [ 1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
-    { "id": "site_x-", "atom_index": 0, "element": "Pd", "vector": [-1, 0, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
-    { "id": "site_y+", "atom_index": 0, "element": "Pd", "vector": [ 0, 1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} },
-    { "id": "site_y-", "atom_index": 0, "element": "Pd", "vector": [ 0,-1, 0], "role": "metal_site", "site_label": "square_planar_site", "constraints": {} }
-  ],
-
-  "coordination_count": 4,
-  "coordination_atoms": [0,0,0,0],
-  "geometry_hints": { "ideal_bite_angle_deg": 90 },
-  "notes": "Use as a node; vectors define donor approach directions."
-}
-```
-By providing the above-given JSON structure as "node.json" (replacing "node" with whatever square-planar metal center is desired) inside the nodes directory, it can be used for assembly. Adapting the used metal is as easy as replacing "Pd" with the required metal atom (and respective charge) inside the JSON file.
 
 ---
 
